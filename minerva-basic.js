@@ -128,6 +128,12 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
 
 
   let map = new ol.Map({
+    controls: ol.control.defaults({
+      attributionOptions: {
+        collapsible: false
+      }
+    }),
+
     target: elementId,
     layers: [
       new ol.layer.Tile({
@@ -168,7 +174,8 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
     ],
     view: new ol.View({
       center: ol.proj.fromLonLat(pointToLonLat({x: width / 2, y: height / 2})),
-      zoom: 4
+      zoom: 4,
+      enableRotation: false
     })
   });
 

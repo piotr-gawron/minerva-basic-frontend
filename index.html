@@ -5,10 +5,20 @@
           href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.1.1/css/ol.css"
           type="text/css">
     <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+        }
+
         .map {
-            height: 500px;
+            height: calc(100% - 40px);
             width: 100%;
             background-color: #e4e2de;
+        }
+
+        .controls {
+            height: 40px;
+            width: 100%;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.1.1/build/ol.js"></script>
@@ -16,20 +26,20 @@
     <title>Minerva example</title>
 </head>
 <body>
+<div class="controls">
+    <label for="serverUrl">Server url:</label>
+    <input id="serverUrl" value="https://pdmap.uni.lu/minerva/" disabled/>
 
-<label for="serverUrl">Server url:</label>
-<input id="serverUrl" value="https://pdmap.uni.lu/minerva/" disabled />
+    <label for="projectId">Project id:</label>
+    <select id="projectId" disabled>
+        <option value="pd_map_autumn_19">pd_map_autumn_19</option>
+    </select>
 
-<label for="projectId">Project id:</label>
-<select id="projectId" disabled >
-    <option value="pd_map_autumn_19">pd_map_autumn_19</option>
-</select>
-
-<label for="submapId">Submap:</label>
-<select id="submapId" disabled >
-    <option value="4895">PD_190925_1</option>
-</select>
-
+    <label for="submapId">Submap:</label>
+    <select id="submapId" disabled>
+        <option value="4895">PD_190925_1</option>
+    </select>
+</div>
 <div id="map" class="map"></div>
 <script type="text/javascript">
   let elementId = "map";
