@@ -6,7 +6,7 @@ let transformationData;
  * @return {Promise<Response>}
  */
 async function fetchOverProxy(url) {
-  return await fetch("https://minerva-dev.lcsb.uni.lu/minerva-proxy/?url=" + url);
+  return await fetch("https://minerva-dev.lcsb.uni.lu/minerva-proxy/?url=" + url.replace("&", "%26"));
 }
 
 /**
@@ -27,6 +27,10 @@ function radiansToDegrees(rad) {
   return rad / (Math.PI / 180);
 }
 
+function degreesToRadians(deg) {
+  return deg * (Math.PI / 180);
+}
+
 /**
  *
  * @param {Object} point
@@ -42,6 +46,40 @@ function pointToLonLat(point) {
   let latRadians = (y - transformationData.tileSize / 2) / -transformationData.pixelsPerLonRadian;
   let lat = radiansToDegrees(2 * Math.atan(Math.exp(latRadians)) - Math.PI / 2);
   return [lng, lat];
+}
+
+/**
+ *
+ * @param projection
+ * @return {{x: number, y: number}}
+ */
+function fromProjectionToPoint(projection) {
+  let lngLat = ol.proj.toLonLat(projection);
+  let lat = lngLat[1];
+  let lng = lngLat[0];
+
+  let x = transformationData.tileSize / 2 + lng * transformationData.pixelsPerLonDegree;
+
+  // Truncating to 0.9999 effectively limits latitude to 89.189. This is
+  // about a third of a tile past the edge of the world tile.
+  let sinusY = bound(Math.sin(degreesToRadians(lat)), -0.9999, 0.9999);
+  let y = transformationData.tileSize / 2 + 0.5 * Math.log((1 + sinusY) / (1 - sinusY)) * -transformationData.pixelsPerLonRadian;
+
+  // rescale the point (all computations are done assuming that we work on
+  // TILE_SIZE square)
+  x *= transformationData.zoomFactor;
+  y *= transformationData.zoomFactor;
+  return {x, y};
+}
+
+function bound(value, minVal, maxVal) {
+  if (minVal !== null && minVal !== undefined) {
+    value = Math.max(value, minVal);
+  }
+  if (maxVal !== null && maxVal !== undefined) {
+    value = Math.min(value, maxVal);
+  }
+  return value;
 }
 
 /**
@@ -83,7 +121,7 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
   let overlayDirectory = projectDirectory + "/" + imagesData[0].path + "/";
 
 
-  return new ol.Map({
+  let map = new ol.Map({
     target: elementId,
     layers: [
       new ol.layer.Tile({
@@ -126,4 +164,25 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
       zoom: 4
     })
   });
+
+  map.on("click", async function (evt) {
+    let point = fromProjectionToPoint(evt.coordinate);
+    console.log("Click on point: ", point);
+    let response = await fetchOverProxy(apiUrl + "projects/" + projectId + "/models/" + submapId + "/bioEntities:search?coordinates=" + point.x + "," + point.y + "&count=1");
+    let data = await response.json();
+    let result = null;
+    if (data.length > 0) {
+      if (data[0].type === "ALIAS") {
+        response = await fetchOverProxy(apiUrl + "projects/" + projectId + "/models/" + submapId + "/bioEntities/elements/?id=" + data[0].id);
+        data = await response.json();
+        alert("You clicked on element " + data[0].type + ": " + data[0].name);
+      } else if (data[0].type === "REACTION") {
+        response = await fetchOverProxy(apiUrl + "projects/" + projectId + "/models/" + submapId + "/bioEntities/reactions/?id=" + data[0].id);
+        data = await response.json();
+        alert("You clicked on reaction " + data[0].type + ": " + data[0].reactionId);
+      }
+    }
+  });
+
+  return map;
 }
