@@ -1,3 +1,5 @@
+let transformationData;
+
 /**
  * Due to CORS we need to use proxy.
  * @param url
@@ -5,6 +7,41 @@
  */
 async function fetchOverProxy(url) {
   return await fetch("https://minerva-dev.lcsb.uni.lu/minerva-proxy/?url=" + url);
+}
+
+/**
+ * Computes some internal data used for transformation between x,y coordinates and lat,lon position.
+ * @param options data obtained from minerva API for given submap
+ * @return {{tileSize: number, zoomFactor: number, pixelsPerLonDegree: number, pixelsPerLonRadian: number}}
+ */
+function computeCoordinatesTransformationData(options) {
+  return {
+    tileSize: options.tileSize,
+    pixelsPerLonDegree: options.tileSize / 360,
+    pixelsPerLonRadian: options.tileSize / (2 * Math.PI),
+    zoomFactor: Math.max(options.width, options.height) / (options.tileSize / (1 << options.minZoom))
+  };
+}
+
+function radiansToDegrees(rad) {
+  return rad / (Math.PI / 180);
+}
+
+/**
+ *
+ * @param {Object} point
+ * @param {number} point.x
+ * @param {number} point.y
+ * @return {[number, number]}
+ */
+function pointToLonLat(point) {
+  let x = point.x / transformationData.zoomFactor;
+  let y = point.y / transformationData.zoomFactor;
+
+  let lng = (x - transformationData.tileSize / 2) / transformationData.pixelsPerLonDegree;
+  let latRadians = (y - transformationData.tileSize / 2) / -transformationData.pixelsPerLonRadian;
+  let lat = radiansToDegrees(2 * Math.atan(Math.exp(latRadians)) - Math.PI / 2);
+  return [lng, lat];
 }
 
 /**
@@ -24,6 +61,8 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
 
   response = await fetchOverProxy(apiUrl + "projects/" + projectId + "/models/" + submapId);
   let submapData = await response.json();
+
+  transformationData = computeCoordinatesTransformationData(submapData);
 
   let height = submapData.height;
   let width = submapData.width;
@@ -83,7 +122,7 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
       })
     ],
     view: new ol.View({
-      center: ol.proj.fromLonLat([-120, 90]), //TODO this should be automatically centered
+      center: ol.proj.fromLonLat(pointToLonLat({x: width / 2, y: height / 2})),
       zoom: 4
     })
   });
