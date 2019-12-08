@@ -184,7 +184,6 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
     console.log("Click on point: ", point);
     let response = await fetchOverProxy(apiUrl + "projects/" + projectId + "/models/" + submapId + "/bioEntities:search?coordinates=" + point.x + "," + point.y + "&count=1");
     let data = await response.json();
-    let result = null;
     if (data.length > 0) {
       if (data[0].type === "ALIAS") {
         response = await fetchOverProxy(apiUrl + "projects/" + projectId + "/models/" + submapId + "/bioEntities/elements/?id=" + data[0].id);
@@ -194,12 +193,12 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
         if (element.bounds.x <= point.x && element.bounds.y <= point.y &&
           element.bounds.x + element.bounds.width >= point.x && element.bounds.y + element.bounds.height >= point.y) {
 
-          var lonLat = pointToLonLat({
+          let lonLat = pointToLonLat({
             x: element.bounds.x + element.bounds.width / 2,
             y: element.bounds.y + element.bounds.height / 2
           });
 
-          var feature = new ol.Feature({
+          let feature = new ol.Feature({
             geometry: new ol.geom.Point(ol.proj.fromLonLat(lonLat)),
           });
           feature.setStyle(new ol.style.Style({
