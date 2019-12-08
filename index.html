@@ -16,15 +16,31 @@
     <title>Minerva example</title>
 </head>
 <body>
-<h2>PD map</h2>
+
+<label for="serverUrl">Server url:</label>
+<input id="serverUrl" value="https://pdmap.uni.lu/minerva/" disabled />
+
+<label for="projectId">Project id:</label>
+<select id="projectId" disabled >
+    <option value="pd_map_autumn_19">pd_map_autumn_19</option>
+</select>
+
+<label for="submapId">Submap:</label>
+<select id="submapId" disabled >
+    <option value="4895">PD_190925_1</option>
+</select>
+
 <div id="map" class="map"></div>
 <script type="text/javascript">
   let elementId = "map";
-  let serverUrl = "https://pdmap.uni.lu/minerva/";
-  let projectId = "pd_map_autumn_19";
-  let submapId = "4895";
+  let serverUrl = document.getElementById('serverUrl').value;
+
+  let selectProject = document.getElementById("projectId");
+  let projectId = selectProject.options[selectProject.selectedIndex].value;
+
+  let submapId = 4895;
 
   createMap({elementId, serverUrl, projectId, submapId});
- </script>
+</script>
 </body>
 </html>
