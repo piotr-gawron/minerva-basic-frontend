@@ -120,6 +120,12 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
 
   let overlayDirectory = projectDirectory + "/" + imagesData[0].path + "/";
 
+  let markerLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+      features: []
+    })
+  });
+
 
   let map = new ol.Map({
     target: elementId,
@@ -157,7 +163,8 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
             return overlayDirectory + zoom + "/" + x + "/" + y + ".PNG";
           }
         })
-      })
+      }),
+      markerLayer
     ],
     view: new ol.View({
       center: ol.proj.fromLonLat(pointToLonLat({x: width / 2, y: height / 2})),
@@ -175,11 +182,37 @@ async function createMap({elementId, projectId, submapId, serverUrl}) {
       if (data[0].type === "ALIAS") {
         response = await fetchOverProxy(apiUrl + "projects/" + projectId + "/models/" + submapId + "/bioEntities/elements/?id=" + data[0].id);
         data = await response.json();
-        alert("You clicked on element " + data[0].type + ": " + data[0].name);
+
+        let element = data[0];
+        if (element.bounds.x <= point.x && element.bounds.y <= point.y &&
+          element.bounds.x + element.bounds.width >= point.x && element.bounds.y + element.bounds.height >= point.y) {
+
+          var lonLat = pointToLonLat({
+            x: element.bounds.x + element.bounds.width / 2,
+            y: element.bounds.y + element.bounds.height / 2
+          });
+
+          var feature = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat(lonLat)),
+          });
+          feature.setStyle(new ol.style.Style({
+              image: new ol.style.Icon({
+                src: "https://cdn.mapmarker.io/api/v1/pin?text=P&size=50&hoffset=1",
+                anchor: [0.5, 1],
+                anchorXUnits: 'fraction',
+                anchorYUnits: 'fraction'
+              })
+            }
+          ));
+          markerLayer.getSource().clear();
+          markerLayer.getSource().addFeature(feature);
+
+          console.log("You clicked on element " + element.type + ": " + element.name);
+        }
       } else if (data[0].type === "REACTION") {
         response = await fetchOverProxy(apiUrl + "projects/" + projectId + "/models/" + submapId + "/bioEntities/reactions/?id=" + data[0].id);
         data = await response.json();
-        alert("You clicked on reaction " + data[0].type + ": " + data[0].reactionId);
+        console.log("You clicked on reaction " + data[0].type + ": " + data[0].reactionId);
       }
     }
   });
